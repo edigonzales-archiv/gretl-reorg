@@ -1,0 +1,93 @@
+plugins {
+    id 'java'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+    id 'com.gradle.plugin-publish' version '0.10.0'
+}
+
+apply from: 'dependencies.gradle'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+jar.baseName = 'gretl'
+description = 'gretl gradle plugin'
+
+group 'ch.so.agi'
+version '1.0.5'+System.getProperty('release', "-SNAPSHOT") // -Drelease
+
+allprojects {
+    repositories {
+        mavenLocal()
+        maven {
+            url "http://jars.interlis.ch"
+        }
+        maven {
+            url "http://download.osgeo.org/webdav/geotools/"
+        }
+        mavenCentral()
+        jcenter()
+    }
+}
+
+dependencies {
+    runtimeOnly postgresqlDependency
+    runtimeOnly sqliteJdbcDependency
+    runtimeOnly derbyDependency
+    //runtimeOnly oracleDependency
+
+    implementation ilivalidatorDependency
+    implementation(ili2pgDependency) {
+        exclude group: 'ch.ehi', module: 'ehisqlgen'
+    }
+    implementation ioxWkfDependency
+    implementation ioxIliDependency
+    implementation ehiSqlgenDependency
+
+    implementation apacheCommonsIoDependency
+
+    testImplementation junitDependency
+}
+
+pluginBundle {
+    website = 'https://github.com/sogis/gretl' 
+    vcsUrl = 'https://github.com/sogis/gretl.git' 
+    tags = ['etl', 'gis', 'sdi', 'geo', 'geoinformation', 'interlis', 'geopackage', 'shapefile', 'csv', 'database', 'postgresql', 'sqlite', 'ili2pg', 'ilivalidator'] 
+}
+
+gradlePlugin {
+    plugins {
+        gretlPlugin {
+            id = 'ch.so.agi.gretl'
+            implementationClass = 'ch.so.agi.gretl.gradle.GretlPlugin'
+        }
+    }
+}
+
+pluginBundle {
+    plugins { 
+        gretlPlugin {  
+            // id is captured from gradlePlugin extension block 
+            displayName = 'GRETL' 
+            description = 'The Gradle gretl plugin extends gradle for use as a sql-centric (geo)data etl. gretl = gradle etl.' 
+           // tags = ['individual', 'tags', 'per', 'plugin'] 
+            //version = '1.0.5' 
+        }
+    }
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
+}
+
+// Disable very strict javadoc generation, e.g. handling of ">" in comments.
+// https://stackoverflow.com/questions/34874175/disable-all-javadoc-in-gradle
+if (JavaVersion.current().isJava8Compatible()) {
+    allprojects {
+        tasks.withType(Javadoc) {
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
+    }
+}
