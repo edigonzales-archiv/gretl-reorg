@@ -1,0 +1,3 @@
+Versionierungsstrategie...
+
+plugin und docker
