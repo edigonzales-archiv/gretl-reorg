@@ -26,13 +26,42 @@ def PG_CONTAINER_NAME = "test-database-pg"
 def GROUP = "Docker Test Database"
 
 /**
- * SourceSets ar only responsible for compiling source code,
- * but do not deal with executing the byte code.
- * We need to crate a 'functionalTest(type: Test)' task.
+ * SourceSets are only responsible for compiling source code,
+ * but do not deal with executing the byte code (= the tests).
+ * We need to create a 'functionalTest(type: Test)' task.
  */
 sourceSets {
     functionalTest {
         java.srcDir file('src/functionalTest/java')
+    }
+}
+
+/**
+ * Task for executing the functional tests. It references the 
+ * classes and runtime classpath of the functional test source set.
+ */
+task functionalTest(type: Test) {
+    description = 'Run the functional tests.'
+    group = 'Verification'
+
+    // show standard out and standard error of the test JVM(s) on the console
+    testLogging.showStandardStreams = System.getenv('TRAVIS')=='true'
+    //testLogging.showStandardStreams = true
+
+    testClassesDirs = sourceSets.functionalTest.output.classesDirs
+    classpath += sourceSets.functionalTest.runtimeClasspath //+ sourceSets.main.runtimeClasspath
+    jvmArgs '-Xmx1g'
+
+    //mustRunAfter test
+    dependsOn 'startAndWaitOnHealthyPostgresContainer'
+    //finalizedBy stopContainer
+}
+
+functionalTest {
+    // see https://docs.gradle.org/4.9/userguide/java_testing.html#test_filtering
+    // see https://docs.gradle.org/4.9/javadoc/org/gradle/api/tasks/testing/TestFilter.html
+    filter {
+        //includeTestsMatching "ch.so.agi.gretl.jobs.PostgisRasterExportTest"
     }
 }
 
@@ -88,37 +117,3 @@ task startAndWaitOnHealthyPostgresContainer(type: DockerWaitHealthyContainer) {
     timeout = 60
     targetContainerId { createPostgresDockerContainer.getContainerId() }
 }
-
-/**
- * Task for executing the functional tests. It references the classes and runtime classpath
- * of the functional test source set.
- */
-task functionalTest(type: Test) {
-    description = 'Run the functional tests.'
-    group = 'Verification'
-
-    // show standard out and standard error of the test JVM(s) on the console
-    testLogging.showStandardStreams = System.getenv('TRAVIS')=='true'
-    //testLogging.showStandardStreams = true
-
-    testClassesDirs = sourceSets.functionalTest.output.classesDirs
-    classpath += sourceSets.functionalTest.runtimeClasspath //+ sourceSets.main.runtimeClasspath
-    jvmArgs '-Xmx1g'
-
-    //mustRunAfter test
-}
-
-
-functionalTest {
-    dependsOn startAndWaitOnHealthyPostgresContainer
-    //finalizedBy stopContainer
-
-    // see https://docs.gradle.org/4.9/userguide/java_testing.html#test_filtering
-    // see https://docs.gradle.org/4.9/javadoc/org/gradle/api/tasks/testing/TestFilter.html
-    filter {
-        //includeTestsMatching "ch.so.agi.gretl.jobs.PostgisRasterExportTest"
-    }
-}
-
-
-
