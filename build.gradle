@@ -6,6 +6,7 @@ plugins {
 }
 
 apply from: 'dependencies.gradle'
+apply from: 'gradle/functional-test.gradle'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -49,12 +50,6 @@ dependencies {
     testImplementation junitDependency
 }
 
-pluginBundle {
-    website = 'https://github.com/sogis/gretl' 
-    vcsUrl = 'https://github.com/sogis/gretl.git' 
-    tags = ['etl', 'gis', 'sdi', 'geo', 'geoinformation', 'interlis', 'geopackage', 'shapefile', 'csv', 'database', 'postgresql', 'sqlite', 'ili2pg', 'ilivalidator'] 
-}
-
 gradlePlugin {
     plugins {
         gretlPlugin {
@@ -65,6 +60,10 @@ gradlePlugin {
 }
 
 pluginBundle {
+    website = 'https://github.com/sogis/gretl' 
+    vcsUrl = 'https://github.com/sogis/gretl.git' 
+    tags = ['etl', 'gis', 'sdi', 'geo', 'geoinformation', 'interlis', 'geopackage', 'shapefile', 'csv', 'database', 'postgresql', 'sqlite', 'ili2pg', 'ilivalidator'] 
+    
     plugins { 
         gretlPlugin {  
             // id is captured from gradlePlugin extension block 

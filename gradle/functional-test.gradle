@@ -1,0 +1,124 @@
+
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
+    }
+    dependencies {
+        classpath 'com.bmuschko:gradle-docker-plugin:3.5.0'
+    }
+}
+
+apply plugin: com.bmuschko.gradle.docker.DockerRemoteApiPlugin
+
+import java.nio.file.Paths
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer.ExposedPort
+import com.bmuschko.gradle.docker.tasks.container.extras.DockerWaitHealthyContainer
+
+def PG_TAG_NAME = "test-database-pg"
+def PG_CONTAINER_NAME = "test-database-pg"
+def GROUP = "Docker Test Database"
+
+/**
+ * SourceSets ar only responsible for compiling source code,
+ * but do not deal with executing the byte code.
+ * We need to crate a 'functionalTest(type: Test)' task.
+ */
+sourceSets {
+    functionalTest {
+        java.srcDir file('src/functionalTest/java')
+    }
+}
+
+task buildPostgresDockerImage(type: DockerBuildImage) {
+    description = "Build PostgreSQL docker image for testing."
+    group = GROUP
+
+    inputDir = file(Paths.get(project.rootDir.toString(), "tooling", "test-database-pg"))
+    tag = "test-database-pg"
+}
+
+task removePostgresDockerContainer(type: DockerRemoveContainer) {
+    description = "Remove existing PostgreSQL testing docker container."
+    group = GROUP
+
+    targetContainerId { "test-database-pg" }
+    force = true
+
+    onError { exception ->
+        if (!exception.message.contains('No such container')) // ignore exception if container does not exist otherwise throw it
+            throw exception
+    }
+}
+
+task createPostgresDockerContainer(type: DockerCreateContainer) {
+    dependsOn 'buildPostgresDockerImage'
+    dependsOn 'removePostgresDockerContainer'
+
+    description = "Create PostgreSQL docker container for testing."
+    group = GROUP
+
+    targetImageId { buildPostgresDockerImage.getImageId() }
+    containerName = "test-database-pg"
+    portBindings = ['5432:5432']
+    exposedPorts = [new ExposedPort("tcp", [5432])]
+}
+
+task startPostgresDockerContainer(type: DockerStartContainer) {
+    dependsOn 'createPostgresDockerContainer'
+
+    description = "Start PostgreSQL docker container for testing."
+    group = GROUP
+
+    targetContainerId { createPostgresDockerContainer.getContainerId() }
+}
+
+task startAndWaitOnHealthyPostgresContainer(type: DockerWaitHealthyContainer) {
+    dependsOn 'startPostgresDockerContainer'
+
+    description = "Waiting until the PostgreSQL running within the container becomes accessible."
+    group = GROUP
+
+    timeout = 60
+    targetContainerId { createPostgresDockerContainer.getContainerId() }
+}
+
+/**
+ * Task for executing the functional tests. It references the classes and runtime classpath
+ * of the functional test source set.
+ */
+task functionalTest(type: Test) {
+    description = 'Run the functional tests.'
+    group = 'Verification'
+
+    // show standard out and standard error of the test JVM(s) on the console
+    testLogging.showStandardStreams = System.getenv('TRAVIS')=='true'
+    //testLogging.showStandardStreams = true
+
+    testClassesDirs = sourceSets.functionalTest.output.classesDirs
+    classpath += sourceSets.functionalTest.runtimeClasspath //+ sourceSets.main.runtimeClasspath
+    jvmArgs '-Xmx1g'
+
+    //mustRunAfter test
+}
+
+
+functionalTest {
+    dependsOn startAndWaitOnHealthyPostgresContainer
+    //finalizedBy stopContainer
+
+    // see https://docs.gradle.org/4.9/userguide/java_testing.html#test_filtering
+    // see https://docs.gradle.org/4.9/javadoc/org/gradle/api/tasks/testing/TestFilter.html
+    filter {
+        //includeTestsMatching "ch.so.agi.gretl.jobs.PostgisRasterExportTest"
+    }
+}
+
+
+
