@@ -17,6 +17,13 @@ __TODO__
 
 _GRETL_ is licensed under the [MIT License](LICENSE).
 
+## Repository
+
+__TODO__ Info zum Repo. Was ist neben dem Plugin noch drin. -> Ein
+
+## Usage
+__TODO__ einfachst mögliche Ausführung.
+
 ## Architecture
 
 __TODO__

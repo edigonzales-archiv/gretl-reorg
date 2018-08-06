@@ -3,6 +3,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
     id 'com.gradle.plugin-publish' version '0.10.0'
+    //id 'com.bmuschko.docker-remote-api' version '3.5.0'
 }
 
 apply from: 'dependencies.gradle'
@@ -66,11 +67,8 @@ pluginBundle {
     
     plugins { 
         gretlPlugin {  
-            // id is captured from gradlePlugin extension block 
             displayName = 'GRETL' 
             description = 'The Gradle gretl plugin extends gradle for use as a sql-centric (geo)data etl. gretl = gradle etl.' 
-           // tags = ['individual', 'tags', 'per', 'plugin'] 
-            //version = '1.0.5' 
         }
     }
 }
@@ -79,6 +77,19 @@ publishing {
     repositories {
         mavenLocal()
     }
+}
+
+// Transfer the required configuration variables to all test code.
+// (The test code has no access to the -D or -P variables as it is executed in a separate jvm-process)
+tasks.withType(Test) {
+    def GRETLTEST_DBURI_PG = 'gretltest_dburi_pg'
+    systemProperty(GRETLTEST_DBURI_PG, findProperty(GRETLTEST_DBURI_PG))
+
+    def GRETLTEST_DBURI_ORA = 'gretltest_dburi_ora'
+    systemProperty(GRETLTEST_DBURI_ORA, findProperty(GRETLTEST_DBURI_ORA))
+
+    println 'dburi_pg: ' + getSystemProperties().getAt(GRETLTEST_DBURI_PG)
+    println 'dburi_ora: ' + getSystemProperties().getAt(GRETLTEST_DBURI_ORA)
 }
 
 // Disable very strict javadoc generation, e.g. handling of ">" in comments.

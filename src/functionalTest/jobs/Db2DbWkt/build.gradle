@@ -1,0 +1,22 @@
+import ch.so.agi.gretl.api.*
+import ch.so.agi.gretl.tasks.*
+
+plugins {
+    id "ch.so.agi.gretl"
+}
+
+def GRETLTEST_DBURI = 'gretltest_dburi_pg'
+def db_uri = findProperty(GRETLTEST_DBURI) != null ? findProperty(GRETLTEST_DBURI) : 'jdbc:postgresql://localhost:5432/gretl'
+
+def db_user = "dmluser"
+def db_pass = "dmluser"
+
+defaultTasks 'writeWkt'
+
+task writeWkt(type: Db2Db) {
+    sourceDb =  [db_uri,db_user,db_pass]
+    targetDb = [db_uri,db_user,db_pass]
+    transferSets = [
+            new TransferSet('select_wkt.sql', 'db2dbwkt.target_data', true, [ "geom:wkt:2056" ] as String[])
+    ];
+}

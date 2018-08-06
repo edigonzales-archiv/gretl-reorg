@@ -32,7 +32,7 @@ Quellcode und Gradle-Jobs liegen im SourceSet `src/functionalTest/java` resp. `s
 * password: ddluser
 * jdbc-url: jdbc:postgresql:gretl
 
-Die Gradle-Tasks für die Funktionstest sind in der Datei `gradle/functional-test.gradle` gespeichert.
+Die Gradle-Tasks (inkl. die Tasks für das Hochfahren des Docker-Containers) für die Funktionstest sind in der Datei `gradle/functional-test.gradle` gespeichert.
 
 Die _Functional Tests_ werden mit dem Befehl `./gradlew functionalTest -Pgretltest_dburi_pg=jdbc:postgresql:gretl`. DB-User und -Passwort sind in den `build.gradle`-Dateien codiert.
 
