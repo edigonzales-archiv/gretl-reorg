@@ -75,7 +75,7 @@ public class ShpExport extends DefaultTask {
             log.error("failed to run ShpExport", e);
             GradleException ge = TaskUtil.toGradleException(e);
             throw ge;
-        }finally {
+        } finally {
             if(conn!=null) {
                 try {
                     conn.rollback();
