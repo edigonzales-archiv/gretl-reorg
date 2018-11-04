@@ -190,7 +190,6 @@ public abstract class Ili2pgAbstractTask extends DefaultTask {
         Config settings=new Config();
         new ch.ehi.ili2pg.PgMain().initConfig(settings);
         return settings;
-        
     }
 }
 
