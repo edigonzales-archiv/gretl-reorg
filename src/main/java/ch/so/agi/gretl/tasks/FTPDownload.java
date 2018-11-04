@@ -33,10 +33,13 @@ public class FTPDownload extends DefaultTask {
     
     @Input
     public String downloadDirectory;
+    
+    @Input
+    @Optional
+    public boolean skipOnFailure = true; 
 
     /**
-     * Download a file from a FTP server. Task will finish withou
-     * errors if the file does not exist on the FTP server.
+     * Download a file from a FTP server. 
      */
     @TaskAction
     public void downloadFile() {
@@ -60,7 +63,7 @@ public class FTPDownload extends DefaultTask {
         
         FTPSimpleClient ftpClient = new FTPSimpleClient();
         ftpClient.open(host, username, password, port);
-        ftpClient.downloadFile(dataFile, downloadDirectory);
+        ftpClient.downloadFile(dataFile, downloadDirectory, skipOnFailure);
         ftpClient.close();
     }
 }
