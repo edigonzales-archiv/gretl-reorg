@@ -50,6 +50,7 @@ dependencies {
     implementation apacheCommonsNetDependency
 
     testImplementation junitDependency
+    testImplementation mockFtpServerDependency
 }
 
 gradlePlugin {

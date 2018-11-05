@@ -82,7 +82,7 @@ public class FTPSimpleClient {
     	try {
         	// Figure out the directory of the file to get a list of
         	// all files in this directory.
-        	String dataFileDirectory = FilenameUtils.getPath(dataFile);
+        	String dataFileDirectory = FilenameUtils.getFullPath(dataFile);
 			String[] files = ftpClient.listNames(dataFileDirectory);
 
 			// Check if the file that should be downloaded is in the

@@ -15,6 +15,7 @@ ext {
     oracleVersion = '12.1.0.1'
     
     junitVersion = '4.12'
+    mockFtpServerVersion = '2.7.1'    
 
     // dependencies
     ioxIliDependency = [ group: 'ch.interlis', name: 'iox-ili', version: ioxIliVersion ]
@@ -32,4 +33,5 @@ ext {
     oracleDependency = [ group: 'com.oracle', name: 'ojdbc7', version: oracleVersion]
     
     junitDependency = [ group: 'junit', name: 'junit', version: junitVersion ]
+    mockFtpServerDependency = [ group: 'org.mockftpserver', name: 'MockFtpServer', version: mockFtpServerVersion ]
 }
