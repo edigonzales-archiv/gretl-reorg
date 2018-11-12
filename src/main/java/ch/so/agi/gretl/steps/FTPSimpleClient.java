@@ -78,7 +78,7 @@ public class FTPSimpleClient {
      * @param dataFile Remote file path
      * @param downloadDirectory The local directory where the file is stored
      */
-    public void downloadFile(String dataFile, String downloadDirectory, boolean skipOnFailure) {
+    public void downloadFile(String dataFile, String downloadDirectory, boolean throwExceptionOnMissingFile) {
     	try {
         	// Figure out the directory of the file to get a list of
         	// all files in this directory.
@@ -93,10 +93,10 @@ public class FTPSimpleClient {
 	        if (!fileList.contains(fileName)) {
 				String msg = "file not found on ftp server: " + dataFile;
 				log.info(msg);
-				if (skipOnFailure) {
-					return;
-				} else {
+				if (throwExceptionOnMissingFile) {
 					throw new GradleException(msg);
+				} else {
+					return;
 				}
 	        }
 	        // Download file

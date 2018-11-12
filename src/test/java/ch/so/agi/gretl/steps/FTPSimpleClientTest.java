@@ -57,7 +57,7 @@ public class FTPSimpleClientTest {
 		FTPSimpleClient ftpClient = new FTPSimpleClient();//("localhost", fakeFtpServer.getServerControlPort(), "user", "password");
         ftpClient.open("localhost", "user", "password", fakeFtpServer.getServerControlPort());
         String tmpDir = folder.newFolder().getAbsolutePath();
-		ftpClient.downloadFile("/data/foobar.txt", tmpDir, false);
+		ftpClient.downloadFile("/data/foobar.txt", tmpDir, true);
 		ftpClient.close();
 		
 		File file = Paths.get(tmpDir, REMOTE_FILE).toFile();

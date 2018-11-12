@@ -34,7 +34,7 @@ public class FTPDownload extends DefaultTask {
     
     @Input
     @Optional
-    public boolean skipOnFailure = true; 
+    public boolean throwExceptionOnMissingFile = true; 
 
     /**
      * Download a file from a FTP server. 
@@ -61,7 +61,7 @@ public class FTPDownload extends DefaultTask {
         
         FTPSimpleClient ftpClient = new FTPSimpleClient();
         ftpClient.open(host, username, password, port);
-        ftpClient.downloadFile(dataFile, downloadDirectory, skipOnFailure);
+        ftpClient.downloadFile(dataFile, downloadDirectory, throwExceptionOnMissingFile);
         ftpClient.close();
     }
 }
