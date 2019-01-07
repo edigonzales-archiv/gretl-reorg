@@ -30,4 +30,4 @@ Since Gradle 5 TestKit behaves like a regular Gradle invocation, and will search
 
 ## Manual
 
-A german user manual can be found here: [docs/user/](docs/user/index.md)
+A german user manual can be found here: [docs/user/](docs/user/index.md) 
