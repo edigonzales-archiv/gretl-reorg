@@ -26,6 +26,8 @@ It would be possible to use Junit categories (Tags in Junit5) to isolate unit te
 ### Functional tests
 Functional tests are running complete build jobs with TestKit. Docker is needed for starting databases like PostgreSQL with the TestContainer framework.
 
+Since Gradle 5 TestKit behaves like a regular Gradle invocation, and will search upwards for a settings.gradle file that defines the build. Hence you need a (empty) settings.gradle in every job directory. 
+
 ## Manual
 
 A german user manual can be found here: [docs/user/](docs/user/index.md)

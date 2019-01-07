@@ -32,6 +32,12 @@ allprojects {
     }
 }
 
+configurations.all {
+    resolutionStrategy { 
+        force 'ch.interlis:ili2pg:3.11.3-SNAPSHOT'
+    }
+}
+
 dependencies {
     runtimeOnly postgresqlDependency
     runtimeOnly sqliteJdbcDependency
@@ -51,6 +57,15 @@ dependencies {
 
     testImplementation junitDependency
     testImplementation mockFtpServerDependency
+    
+    functionalTestImplementation sourceSets.main.output
+    functionalTestImplementation sourceSets.test.output
+    
+    functionalTestImplementation configurations.implementation
+    functionalTestImplementation configurations.testImplementation
+    
+    functionalTestRuntime configurations.runtime
+    functionalTestRuntime configurations.testRuntime
 }
 
 gradlePlugin {
