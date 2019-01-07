@@ -3,6 +3,10 @@
 The [Gradle](http://www.gradle.org) gretl plugin extends gradle for use as a sql-centric
 (geo)data etl. gretl = gradle etl.
 
+## Manual
+
+A german user manual can be found here: [docs/user/](docs/user/index.md) 
+
 ## Licencse
 
 _GRETL_ is licensed under the [MIT License](LICENSE).
@@ -28,6 +32,5 @@ Functional tests are running complete build jobs with TestKit. Docker is needed 
 
 Since Gradle 5 TestKit behaves like a regular Gradle invocation, and will search upwards for a settings.gradle file that defines the build. Hence you need a (empty) settings.gradle in every job directory. 
 
-## Manual
-
-A german user manual can be found here: [docs/user/](docs/user/index.md) 
+## Jenkins (CI/CD)
+For a working github webhook one have to choose the content type `application/x-www-form-urlencoded` and not `application/json`. And to not forget the trailing `/`.

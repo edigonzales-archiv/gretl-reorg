@@ -6,6 +6,11 @@ pipeline {
                 git 'https://github.com/edigonzales/gretl-reorg.git'
             }
         }
+        stage('Compile') {
+            steps {
+                sh './gradlew --no-daemon clean classes'
+            }
+        }
     }
     post {
         always {
