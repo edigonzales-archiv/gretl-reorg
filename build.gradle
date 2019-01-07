@@ -58,12 +58,24 @@ dependencies {
     testImplementation junitDependency
     testImplementation mockFtpServerDependency
     
+    /**
+     * Provides, at compile-time, the classes produced by the _main_ and _test_ SourceSets, 
+     * allowing the integration tests to access the production code in _main_ and allowing 
+     * them to reuse any unit test helper methods in _test_.
+     */
     functionalTestImplementation sourceSets.main.output
     functionalTestImplementation sourceSets.test.output
     
+    /**
+     * Provides, at compile-time, the dependencies that both _main_ and _test_ require in order
+     * to successfully compile.
+     */
     functionalTestImplementation configurations.implementation
     functionalTestImplementation configurations.testImplementation
     
+    /**
+     * Provides, at run-time, the dependencies that both _main_ and _test_ require to run.
+     */
     functionalTestRuntime configurations.runtime
     functionalTestRuntime configurations.testRuntime
 }
