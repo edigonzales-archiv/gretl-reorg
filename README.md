@@ -32,5 +32,7 @@ Functional tests are running complete build jobs with TestKit. Docker is needed 
 
 Since Gradle 5 TestKit behaves like a regular Gradle invocation, and will search upwards for a settings.gradle file that defines the build. Hence you need a (empty) settings.gradle in every job directory. 
 
+Instead of creating and starting a container with gradle tasks we use the testcontainers framework: it will start a new container _before_ every executed test class.
+
 ## Jenkins (CI/CD)
-For a working github webhook one have to choose the content type `application/x-www-form-urlencoded` and not `application/json`. And to not forget the trailing `/`.
+For a working github webhook one have to choose the content type `application/x-www-form-urlencoded` and not `application/json`. And do not forget the trailing `/`.
