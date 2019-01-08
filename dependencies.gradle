@@ -15,7 +15,9 @@ ext {
     oracleVersion = '12.1.0.1'
     
     junitVersion = '4.12'
-    mockFtpServerVersion = '2.7.1'    
+    mockFtpServerVersion = '2.7.1'   
+    testContainersVersion = '1.10.5'
+     
 
     // dependencies
     ioxIliDependency = [ group: 'ch.interlis', name: 'iox-ili', version: ioxIliVersion ]
@@ -34,4 +36,6 @@ ext {
     
     junitDependency = [ group: 'junit', name: 'junit', version: junitVersion ]
     mockFtpServerDependency = [ group: 'org.mockftpserver', name: 'MockFtpServer', version: mockFtpServerVersion ]
+    testContainersDependency = [ group: 'org.testconainers', name: 'testcontainers', version: testContainersVersion]
+    testContainersPostgresDependency = [ group: 'org.testconainers', name: 'postgresql', version: testContainersVersion]
 }

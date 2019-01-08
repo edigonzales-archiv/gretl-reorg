@@ -53,7 +53,7 @@ task functionalTest(type: Test) {
     jvmArgs '-Xmx1g'
 
     //mustRunAfter test
-    dependsOn 'startAndWaitOnHealthyPostgresContainer'
+    //dependsOn 'startAndWaitOnHealthyPostgresContainer'
     //finalizedBy stopContainer
 }
 
