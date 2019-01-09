@@ -1,10 +1,14 @@
 package ch.so.agi.gretl.jobs;
 
-import ch.so.agi.gretl.util.TestUtilSqlPg;
+import ch.so.agi.gretl.util.TestUtilSqlPostgres;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.PostgisContainerProvider;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.sql.Connection;
@@ -17,6 +21,18 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
 import static org.junit.Assert.assertEquals;
 
 public class Db2DbTaskTest {
+    static String WAIT_PATTERN = ".*database system is ready to accept connections.*\\s";
+    
+    Connection con = null;
+    
+    @ClassRule
+    public static PostgreSQLContainer postgres = 
+        (PostgreSQLContainer) new PostgisContainerProvider()
+        .newInstance().withDatabaseName("gretl")
+        .withUsername("ddluser")
+        .withInitScript("init_postgresql.sql")
+        .waitingFor(Wait.forLogMessage(WAIT_PATTERN, 2));
+
     /**
      * Tests if db2db can handle (write) standard wkb geometry type.
      * Db2Db supports casting binary data to postgis wkb by using
@@ -28,37 +44,37 @@ public class Db2DbTaskTest {
     @Test
     public void canWriteGeomFromWkbTest() throws Exception {
         String schemaName = "db2dbWkb".toLowerCase();
-        Connection con = null;
         String geomSrc = "LINESTRING(2600000 1200000,2600001 1200001)";
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
 
             Statement stmt = con.createStatement();
             stmt.execute("CREATE TABLE "+schemaName+".source_data(geom geometry(LINESTRING,2056))");
             stmt.execute("INSERT INTO "+schemaName+".source_data(geom) VALUES (ST_GeomFromText('"+geomSrc+"', 2056))");
             stmt.execute("CREATE TABLE "+schemaName+".target_data(geom geometry(LINESTRING,2056))");
             stmt.close();
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/Db2DbWkb/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":writeWkb").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
             assertEqualGeomInSourceAndTarget(con, schemaName, "target_data", geomSrc);
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
 
@@ -72,37 +88,37 @@ public class Db2DbTaskTest {
     @Test
     public void canWriteGeomFromWktTest() throws Exception {
         String schemaName = "db2dbWkt".toLowerCase();
-        Connection con = null;
         String geomSrc = "LINESTRING(2600000 1200000,2600001 1200001)";
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
 
             Statement stmt = con.createStatement();
             stmt.execute("CREATE TABLE "+schemaName+".source_data(geom geometry(LINESTRING,2056))");
             stmt.execute("INSERT INTO "+schemaName+".source_data(geom) VALUES (ST_GeomFromText('"+geomSrc+"', 2056))");
             stmt.execute("CREATE TABLE "+schemaName+".target_data(geom geometry(LINESTRING,2056))");
             stmt.close();
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/Db2DbWkt/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":writeWkt").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
             assertEqualGeomInSourceAndTarget(con, schemaName, "target_data", geomSrc);
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
 
@@ -116,37 +132,37 @@ public class Db2DbTaskTest {
     @Test
     public void canWriteGeomFromGeoJsonTest() throws Exception {
         String schemaName = "db2dbGeoJson".toLowerCase();
-        Connection con = null;
         String geomSrc = "LINESTRING(2600000 1200000,2600001 1200001)";
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
 
             Statement stmt = con.createStatement();
             stmt.execute("CREATE TABLE "+schemaName+".source_data(geom geometry(LINESTRING,2056))");
             stmt.execute("INSERT INTO "+schemaName+".source_data(geom) VALUES (ST_GeomFromText('"+geomSrc+"', 2056))");
             stmt.execute("CREATE TABLE "+schemaName+".target_data(geom geometry(LINESTRING,2056))");
             stmt.close();
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/Db2DbGeoJson/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":writeGeoJson").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
             assertEqualGeomInSourceAndTarget(con, schemaName, "target_data", geomSrc);
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();;
         }
     }
 
@@ -158,11 +174,10 @@ public class Db2DbTaskTest {
     @Test
     public void fetchSizeParameterTest() throws Exception {
         String schemaName = "db2dbTaskFetchSize".toLowerCase();
-        Connection con = null;
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
 
             Statement stmt = con.createStatement();
             stmt.execute("CREATE TABLE "+schemaName+".source_data(t_id serial, aint integer, adec decimal(7,1), atext varchar(40), aenum varchar(120),adate date, atimestamp timestamp, aboolean boolean,geom_so geometry(POINT,2056))");
@@ -172,31 +187,32 @@ public class Db2DbTaskTest {
             stmt.execute("CREATE TABLE "+schemaName+".target_data(t_id serial, aint integer, adec decimal(7,1), atext varchar(40), aenum varchar(120),adate date, atimestamp timestamp, aboolean boolean,geom_so geometry(POINT,2056))");
 
             stmt.close();
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/Db2DbTaskFetchSize/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":fetchSizeTask").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
             String countDestSql = String.format("select count(*) from %s.target_data", schemaName);
-            int countDest = TestUtilSqlPg.execCountQuery(con, countDestSql);
+            int countDest = TestUtilSqlPostgres.execCountQuery(con, countDestSql);
 
             Assert.assertEquals(
                     "Rowcount in table source_data must be equal to rowcount in table target_data",
                     2,
                     countDest);
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
 
@@ -209,36 +225,36 @@ public class Db2DbTaskTest {
     @Test
     public void taskChainTest() throws Exception {
         String schemaName = "db2dbTaskChain".toLowerCase();
-        Connection con = null;
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
             int countSrc = prepareDb2DbChainTables(con, schemaName);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();;
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/Db2DbTaskChain/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":bToA").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
             String countDestSql = String.format("SELECT count(*) FROM %s.albums_dest", schemaName);
-            int countDest = TestUtilSqlPg.execCountQuery(con, countDestSql);
+            int countDest = TestUtilSqlPostgres.execCountQuery(con, countDestSql);
 
             Assert.assertEquals(
                     "Rowcount in table albums_src must be equal to rowcount in table albums_dest",
                     countSrc,
                     countDest);
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
 
@@ -251,36 +267,36 @@ public class Db2DbTaskTest {
     @Test
     public void relativePathTest() throws Exception{
         String schemaName = "relativePath".toLowerCase();
-        Connection con = null;
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
 
             int countSrc = prepareDb2DbChainTables(con, schemaName);
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/Db2DbTaskRelPath/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":relativePath").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
             String countDestSql = String.format("SELECT count(*) FROM %s.albums_dest", schemaName);
-            int countDest = TestUtilSqlPg.execCountQuery(con, countDestSql);
+            int countDest = TestUtilSqlPostgres.execCountQuery(con, countDestSql);
 
             Assert.assertEquals(
                     "Rowcount in table albums_src must be equal to rowcount in table albums_dest",
                     countSrc,
                     countDest);
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
 
@@ -290,31 +306,31 @@ public class Db2DbTaskTest {
     @Test
     public void deleteDestTableContent() throws Exception{
         String schemaName = "deleteDestTableContent".toLowerCase();
-        Connection con = null;
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
 
             int countSrc = prepareDb2DbChainTables(con, schemaName);
             insertRowsInAlbumsTable(con, schemaName, "dest", 3);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
-
+            con.close();
+            
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/Db2DbTaskDelTable/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":sourceToDestWithDelete").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
             String countDestSql = String.format("SELECT count(*) FROM %s.albums_dest", schemaName);
-            int countDest = TestUtilSqlPg.execCountQuery(con, countDestSql);
+            int countDest = TestUtilSqlPostgres.execCountQuery(con, countDestSql);
 
             Assert.assertEquals(
                     "Rowcount in table albums_src must be equal to rowcount in table albums_dest",
@@ -322,7 +338,7 @@ public class Db2DbTaskTest {
                     countDest);
         }
         finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
     
@@ -352,7 +368,7 @@ public class Db2DbTaskTest {
 
             insertRowsInAlbumsTable(con, schemaName, "src", 4);
 
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
         } catch(SQLException se){
             throw new RuntimeException(se);
         }

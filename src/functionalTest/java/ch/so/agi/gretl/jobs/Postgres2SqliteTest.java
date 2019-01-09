@@ -1,11 +1,15 @@
 package ch.so.agi.gretl.jobs;
 
-import ch.so.agi.gretl.util.TestUtilSqlPg;
+import ch.so.agi.gretl.util.TestUtilSqlPostgres;
 import ch.so.agi.gretl.util.TestUtilSqlSqlite;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.PostgisContainerProvider;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -17,6 +21,16 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
 import static org.junit.Assert.assertEquals;
 
 public class Postgres2SqliteTest {
+    static String WAIT_PATTERN = ".*database system is ready to accept connections.*\\s";
+        
+    @ClassRule
+    public static PostgreSQLContainer postgres = 
+        (PostgreSQLContainer) new PostgisContainerProvider()
+        .newInstance().withDatabaseName("gretl")
+        .withUsername("ddluser")
+        .withInitScript("init_postgresql.sql")
+        .waitingFor(Wait.forLogMessage(WAIT_PATTERN, 2));
+
     /**
      * Tests if the "special" datatypes (Date, Time, GUID, Geometry, ..) are transferred
      * faultfree from postgres to sqlite.
@@ -32,10 +46,10 @@ public class Postgres2SqliteTest {
         
         try {
             // prepare postgres
-            targetCon = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(targetCon, schemaName);
+            srcCon = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(srcCon, schemaName);
 
-            Statement stmtPg = targetCon.createStatement();
+            Statement stmtPg = srcCon.createStatement();
             String createSqlPg = "CREATE TABLE "+schemaName+".source_data(MYINT INTEGER, MYFLOAT REAL, MYTEXT VARCHAR(50), MYDATE DATE, MYTIME TIME, " +
                     "MYUUID UUID, MYGEOM GEOMETRY(LINESTRING,2056))";
             stmtPg.execute(createSqlPg);
@@ -43,29 +57,30 @@ public class Postgres2SqliteTest {
             String insertSqlPg = "INSERT INTO "+schemaName+".source_data VALUES(15, 9.99, 'Hello Db2Db', CURRENT_DATE, CURRENT_TIME, '"+UUID.randomUUID()+"', ST_GeomFromText('"+geomWkt+"', 2056))";
             stmtPg.execute(insertSqlPg);
 
-            TestUtilSqlPg.grantDataModsInSchemaToUser(targetCon, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(srcCon, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
 
-            targetCon.commit();
+            srcCon.commit();
 
             // prepare sqlite
             File sqliteDb = new File(sqliteDbFileName);
             Files.deleteIfExists(sqliteDb.toPath());
             sqliteDb = new File(sqliteDbFileName);
 
-            srcCon = TestUtilSqlSqlite.connect(sqliteDb);
+            targetCon = TestUtilSqlSqlite.connect(sqliteDb);
             
             String sqlSqlite = "CREATE TABLE target_data(MYINT INTEGER, MYFLOAT REAL, MYTEXT TEXT, MYDATE TEXT, MYTIME TEXT, " +
                     "MYUUID TEXT, MYGEOM_WKT TEXT)";
-            Statement stmtSqlite = srcCon.createStatement();
+            Statement stmtSqlite = targetCon.createStatement();
             stmtSqlite.execute(sqlSqlite);
 
-            srcCon.commit();
-            TestUtilSqlSqlite.closeCon(srcCon);
+            targetCon.commit();
+            targetCon.close();
 
             // run gradle
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/Postgres2SqliteDatatypes/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
@@ -84,8 +99,8 @@ public class Postgres2SqliteTest {
                     1,
                     countDest);
         } finally {
-        	    TestUtilSqlPg.closeCon(srcCon);
-        	    TestUtilSqlSqlite.closeCon(targetCon);
+        	    srcCon.close();;
+        	    targetCon.close();
             Files.deleteIfExists(new File(sqliteDbFileName).toPath());
         }
     }

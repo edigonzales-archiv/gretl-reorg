@@ -2,15 +2,30 @@ package ch.so.agi.gretl.jobs;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.PostgisContainerProvider;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.sql.Connection;
 
 import static org.gradle.testkit.runner.TaskOutcome.*;
 import static org.junit.Assert.assertEquals;
 
 public class PostgisRasterExportTest {
+    static String WAIT_PATTERN = ".*database system is ready to accept connections.*\\s";
+        
+    @ClassRule
+    public static PostgreSQLContainer postgres = 
+        (PostgreSQLContainer) new PostgisContainerProvider()
+        .newInstance().withDatabaseName("gretl")
+        .withUsername("ddluser")
+        .withInitScript("init_postgresql.sql")
+        .waitingFor(Wait.forLogMessage(WAIT_PATTERN, 2));
+
     @Test
     public void exportTiff() throws Exception {
         String jobPath = "src/functionalTest/jobs/PostgisRasterTiffExport/";
@@ -24,6 +39,7 @@ public class PostgisRasterExportTest {
         BuildResult result = GradleRunner.create()
                 .withProjectDir(new File(jobPath))
                 .withArguments("-i")
+                .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                 .withPluginClasspath()
                 .build();
 
@@ -54,6 +70,7 @@ public class PostgisRasterExportTest {
         BuildResult result = GradleRunner.create()
                 .withProjectDir(new File(jobPath))
                 .withArguments("-i")
+                .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                 .withPluginClasspath()
                 .build();
 

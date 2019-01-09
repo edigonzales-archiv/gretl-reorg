@@ -4,7 +4,7 @@ plugins {
     id "ch.so.agi.gretl"
 }
 
-def GRETLTEST_DBURI = 'gretltest_dburi_pg'
+def GRETLTEST_DBURI = 'db_uri'
 def db_uri = findProperty(GRETLTEST_DBURI) != null ? findProperty(GRETLTEST_DBURI) : 'jdbc:postgresql://localhost:5432/gretl'
 
 def db_user = "dmluser"
