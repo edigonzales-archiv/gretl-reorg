@@ -1,10 +1,14 @@
 package ch.so.agi.gretl.jobs;
 
-import ch.so.agi.gretl.util.TestUtilSqlPg;
+import ch.so.agi.gretl.util.TestUtilSqlPostgres;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.PostgisContainerProvider;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
 import static org.junit.Assert.*;
@@ -16,33 +20,47 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class ShpImportTest {
+    static String WAIT_PATTERN = ".*database system is ready to accept connections.*\\s";
+    
+    Connection con = null;
+    
+    @ClassRule
+    public static PostgreSQLContainer postgres = 
+        (PostgreSQLContainer) new PostgisContainerProvider()
+        .newInstance().withDatabaseName("gretl")
+        .withUsername("ddluser")
+        .withInitScript("init_postgresql.sql")
+        .waitingFor(Wait.forLogMessage(WAIT_PATTERN, 2));
+
     @Test
     public void importOk() throws Exception {
         String schemaName = "shpimport".toLowerCase();
-        Connection con = null;
+
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
+
             Statement s1 = con.createStatement();
             s1.execute("CREATE TABLE "+schemaName+".importdata(t_id serial, \"Aint\" integer, adec decimal(7,1), atext varchar(40), aenum varchar(120),adate date, geometrie geometry(POINT,2056), aextra varchar(40))");
             s1.close();
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();;
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/ShpImport/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":shpimport").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
 
             Statement s2 = con.createStatement();
             ResultSet rs=s2.executeQuery("SELECT \"Aint\" , adec, atext, aenum,adate, ST_X(geometrie), ST_Y(geometrie), aextra FROM "+schemaName+".importdata WHERE t_id=1"); 
@@ -62,38 +80,41 @@ public class ShpImportTest {
             rs.close();
             s1.close();
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();;
         }
     }
 	
     @Test
     public void importOkBatchSize() throws Exception {
         String schemaName = "shpimport".toLowerCase();
-        Connection con = null;
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
+
             Statement s1 = con.createStatement();
             s1.execute("CREATE TABLE "+schemaName+".importdata_batchsize(t_id serial, \"Aint\" integer, adec decimal(7,1), atext varchar(40), aenum varchar(120),adate date, geometrie geometry(POINT,2056), aextra varchar(40))");
             s1.close();
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/ShpImportBatchSize/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":shpimport").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con.close();
 
+            con = TestUtilSqlPostgres.connect(postgres);
+            
             Statement s2 = con.createStatement();
             ResultSet rs=s2.executeQuery("SELECT \"Aint\" , adec, atext, aenum,adate, ST_X(geometrie), ST_Y(geometrie), aextra FROM "+schemaName+".importdata_batchsize WHERE t_id=1"); 
             if (!rs.next()) {
@@ -112,7 +133,7 @@ public class ShpImportTest {
             rs.close();
             s1.close();
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
 }

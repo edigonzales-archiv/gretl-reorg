@@ -61,14 +61,18 @@ functionalTest {
     // see https://docs.gradle.org/4.9/userguide/java_testing.html#test_filtering
     // see https://docs.gradle.org/4.9/javadoc/org/gradle/api/tasks/testing/TestFilter.html
     filter {
+        //includeTestsMatching "ch.so.agi.gretl.jobs.CsvExportTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.CsvImportTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.CsvValidatorTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.Db2DbTaskTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.IliValidatorTest"
         //includeTestsMatching "ch.so.agi.gretl.jobs.PostgisRasterExportTest"
-        includeTestsMatching "ch.so.agi.gretl.jobs.CsvExportTest"
-        includeTestsMatching "ch.so.agi.gretl.jobs.CsvImportTest"
-        includeTestsMatching "ch.so.agi.gretl.jobs.CsvValidatorTest"
-        includeTestsMatching "ch.so.agi.gretl.jobs.Db2DbTaskTest"
-        includeTestsMatching "ch.so.agi.gretl.jobs.IliValidatorTest"
-        includeTestsMatching "ch.so.agi.gretl.jobs.PostgisRasterExportTest"
-        includeTestsMatching "ch.so.agi.gretl.jobs.Postgres2SqliteTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.Postgres2SqliteTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.ShpExportTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.ShpImportTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.SqlExecutorTaskTest"
+        //includeTestsMatching "ch.so.agi.gretl.jobs.Sqlite2PostgresTest"
+        includeTestsMatching "ch.so.agi.gretl.jobs.Ili2pgImportSchemaTest"
     }
 }
 

@@ -1,21 +1,19 @@
 import ch.so.agi.gretl.tasks.*
 
 plugins {
-    id "ch.so.agi.gretl"
+	id "ch.so.agi.gretl"
 }
 
 def GRETLTEST_DBURI = 'db_uri'
 def db_uri = findProperty(GRETLTEST_DBURI) != null ? findProperty(GRETLTEST_DBURI) : 'jdbc:postgresql://localhost:5432/gretl'
 
-def db_user = "dmluser"
-def db_pass = "dmluser"
+def db_user = "ddluser"
+def db_pass = "ddluser"
 
-defaultTasks 'shpimport'
+defaultTasks 'schemaimport'
 
-task shpimport(type: ShpImport){
+task schemaimport(type: Ili2pgImportSchema){
     database = [db_uri, db_user, db_pass]
-	schemaName = "shpimport"
-	tableName = "importdata_batchsize"
-    dataFile = "data.shp"
-    batchSize = 10
+	dbschema = "schemaimport"
+    models = "OeREBKRMtrsfr_V1_1"
 }

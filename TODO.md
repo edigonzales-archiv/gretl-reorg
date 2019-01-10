@@ -5,5 +5,6 @@
 ## Oracle-JDBC
 - "gute" Lösung fürs AGI beim Builden von jar? / docker image? Wenn nur Image, müsste man das sauber testen. Falls beim Jar, schauen, dass man es builden kann, ohne login.
 
-## ili2pg-Tests
-- import->export->import
+## Tests
+- ili2pg: replace, import, export, etc.
+- sql/db2db: parametrisierte queries

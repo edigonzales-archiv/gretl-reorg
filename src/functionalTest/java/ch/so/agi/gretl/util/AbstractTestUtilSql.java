@@ -5,16 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public abstract class AbstractTestUtilSql {
-    public static void closeCon(Connection con){
-        try {
-            if(con != null)
-                con.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
+public abstract class AbstractTestUtilSql {    
     public static int execCountQuery(Connection con, String query) {
         Statement s = null;
         int count = -1;

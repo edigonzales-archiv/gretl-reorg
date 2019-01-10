@@ -1,10 +1,15 @@
 package ch.so.agi.gretl.jobs;
 
-import ch.so.agi.gretl.util.TestUtilSqlPg;
+import ch.so.agi.gretl.util.TestUtilSqlPostgres;
+
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.PostgisContainerProvider;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
 import static org.junit.Assert.assertEquals;
@@ -15,6 +20,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class SqlExecutorTaskTest {
+    static String WAIT_PATTERN = ".*database system is ready to accept connections.*\\s";
+    
+    Connection con = null;
+    
+    @ClassRule
+    public static PostgreSQLContainer postgres = 
+        (PostgreSQLContainer) new PostgisContainerProvider()
+        .newInstance().withDatabaseName("gretl")
+        .withUsername("ddluser")
+        .withInitScript("init_postgresql.sql")
+        .waitingFor(Wait.forLogMessage(WAIT_PATTERN, 2));
+
     /**
      * Tests that a chain of statements executes properly
      * 1. statement: fill the source table with rows
@@ -23,38 +40,37 @@ public class SqlExecutorTaskTest {
     @Test
     public void taskChainTest() throws Exception {
         String schemaName = "sqlExecuterTaskChain".toLowerCase();
-        Connection con = null;
         try {
-        	    // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
             createSqlExecuterTaskChainTables(con, schemaName);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/SqlExecutorTaskChain/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":insertInto").getOutcome());
 
-            con = TestUtilSqlPg.connect();
+            con = TestUtilSqlPostgres.connect(postgres);
 
             String countSrcSql = String.format("SELECT count(*) FROM %s.albums_src", schemaName);
             String countDestSql = String.format("SELECT count(*) FROM %s.albums_dest", schemaName);
 
-            int countSrc = TestUtilSqlPg.execCountQuery(con, countSrcSql);
-            int countDest = TestUtilSqlPg.execCountQuery(con, countDestSql);
+            int countSrc = TestUtilSqlPostgres.execCountQuery(con, countSrcSql);
+            int countDest = TestUtilSqlPostgres.execCountQuery(con, countDestSql);
 
             Assert.assertEquals("Rowcount in destination table must be equal to rowcount in source table", countSrc, countDest);
             Assert.assertTrue("Rowcount in destination table must be greater than zero", countDest > 0);
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
 
@@ -67,27 +83,27 @@ public class SqlExecutorTaskTest {
     @Test
     public void relPathTest() throws Exception {
         String schemaName = "SqlExecuterRelPath".toLowerCase();
-        Connection con = null;
         try {
         	    // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
             createSqlExecuterTaskChainTables(con, schemaName);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/sqlExecutorTaskRelPath/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
             // check results
             assertEquals(SUCCESS, result.task(":relativePathConfiguration").getOutcome());
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();
         }
     }
     
@@ -108,8 +124,8 @@ public class SqlExecutorTaskTest {
             s2.execute(String.format(ddlBase, schemaName,"dest"));
             s2.close();
 
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
-        } catch(SQLException se){
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
+        } catch(SQLException se) {
             throw new RuntimeException(se);
         }
     }

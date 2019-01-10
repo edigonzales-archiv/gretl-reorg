@@ -1,12 +1,16 @@
 package ch.so.agi.gretl.jobs;
 
 import ch.interlis.ioxwkf.shp.ShapeReader;
-import ch.so.agi.gretl.util.TestUtilSqlPg;
+import ch.so.agi.gretl.util.TestUtilSqlPostgres;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.opengis.feature.simple.SimpleFeature;
+import org.testcontainers.containers.PostgisContainerProvider;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Point;
@@ -24,28 +28,41 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 
 public class ShpExportTest {
+    static String WAIT_PATTERN = ".*database system is ready to accept connections.*\\s";
+    
+    Connection con = null;
+    
+    @ClassRule
+    public static PostgreSQLContainer postgres = 
+        (PostgreSQLContainer) new PostgisContainerProvider()
+        .newInstance().withDatabaseName("gretl")
+        .withUsername("ddluser")
+        .withInitScript("init_postgresql.sql")
+        .waitingFor(Wait.forLogMessage(WAIT_PATTERN, 2));
+
     @Test
     public void exportOk() throws Exception {
         String schemaName = "shpexport".toLowerCase();
-        Connection con = null;
         try {
             // prepare postgres
-            con = TestUtilSqlPg.connect();
-            TestUtilSqlPg.createOrReplaceSchema(con, schemaName);
+            con = TestUtilSqlPostgres.connect(postgres);
+            TestUtilSqlPostgres.createOrReplaceSchema(con, schemaName);
+
             Statement s1 = con.createStatement();
             s1.execute("CREATE TABLE "+schemaName+".exportdata(t_id serial, \"Aint\" integer, adec decimal(7,1), atext varchar(40), aenum varchar(120),adate date, atimestamp timestamp, aboolean boolean,geom_so geometry(POINT,2056))");
             s1.execute("INSERT INTO "+schemaName+".exportdata(t_id, \"Aint\", adec, atext, adate, atimestamp, aboolean,geom_so) VALUES (1,2,3.4,'abc','2013-10-21','2015-02-16T08:35:45.000','true',ST_GeomFromText('POINT(2638000.0 1175250.0)',2056))");
             s1.execute("INSERT INTO "+schemaName+".exportdata(t_id) VALUES (2)");
             s1.close();
-            TestUtilSqlPg.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPg.CON_DMLUSER);
+            TestUtilSqlPostgres.grantDataModsInSchemaToUser(con, schemaName, TestUtilSqlPostgres.CON_DMLUSER);
 
             con.commit();
-            TestUtilSqlPg.closeCon(con);
+            con.close();
 
             // run job
             BuildResult result = GradleRunner.create()
                     .withProjectDir(new File("src/functionalTest/jobs/ShpExport/"))
                     .withArguments("-i")
+                    .withArguments("-Pdb_uri=" + postgres.getJdbcUrl())
                     .withPluginClasspath()
                     .build();
 
@@ -82,7 +99,7 @@ public class ShpExportTest {
                 dataStore.dispose();
             }
         } finally {
-            TestUtilSqlPg.closeCon(con);
+            con.close();;
         }
     }
 }
